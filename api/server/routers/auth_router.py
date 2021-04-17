@@ -11,6 +11,7 @@ from api.server.auth.auth import validateUsername, validateEmail, encryptPasswor
 class Settings(BaseModel):
     authjwt_secret_key: str = os.getenv("SECRET_JWT_KEY")
     authjwt_token_location: set = {"cookies"}
+    authjwt_cookie_secure: bool = False
 
 
 auth_router = APIRouter()
@@ -27,7 +28,7 @@ def authjwt_exception_handler(request: Request, exc: AuthJWTException):
     )
 
 # auth functions
-@auth_router.post('/api/v1/sign_up')
+@auth_router.post('/sign_up')
 async def sign_up(newUser: NewUser) -> str:
     # 1. Validate input data:
     # 1.1 Regex username and email + validate host
@@ -51,7 +52,7 @@ async def sign_up(newUser: NewUser) -> str:
     return {"id": id}
     
 
-@app.post('/api/v1/login')
+@auth_router.post('/login')
 async def login(user: LoginUser, Authorize: AuthJWT = Depends()):
     # 1. Check if username exists in the database
     # 2. Get user from the database
@@ -73,6 +74,21 @@ async def login(user: LoginUser, Authorize: AuthJWT = Depends()):
     Authorize.set_access_cookies(access_token)
     Authorize.set_refresh_cookies(refresh_token)
 
-    return {"msg": "Successfully logged in"}
+    return {"message": "Successfully logged in"}
+
+@auth_router.delete('/logout')
+def logout(Authorize: AuthJWT = Depends()):
+    Authorize.jwt_required()
+    Authorize.unset_jwt_cookies()
+    
+    return {"message": "Successfully logged out"}
 
 
+@auth_router.post('/refresh')
+def refresh(Authorize: AuthJWT = Depends()):
+    Authorize.jwt_refresh_token_required()
+    current_user = Authorize.get_jwt_subject()
+    new_access_token = Authorize.create_access_token(subject=current_user)
+    Authorize.set_access_cookies(new_access_token)
+    
+    return {"message":"The token has been refresh"}
