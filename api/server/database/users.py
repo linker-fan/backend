@@ -48,6 +48,6 @@ async def insertUser(username: str, email: str, hashedPassword: str) -> str:
     return repr(result.inserted_id)
 
 async def getPasswordByUsername(username: str) -> str:
-    password = await users_collection.find_one({"username": username}, {"password": 1})
-    return password
+    password = await users_collection.find_one({"username": username}, {"password": 1, "_id": 0})
+    return password["password"]
 

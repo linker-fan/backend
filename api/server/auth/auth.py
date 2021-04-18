@@ -17,4 +17,4 @@ def encryptPassword(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
 
 def comparePasswordAndHash(password: str, hashedPassword: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hashedPassword)
+    return bcrypt.checkpw(password.encode('utf8'), hashedPassword.encode('utf8'))
