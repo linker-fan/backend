@@ -1,15 +1,15 @@
 import os
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from fastapi_jwt_auth import AuthJWT
 from fastapi_jwt_auth.exceptions import AuthJWTException
 from pydantic import BaseModel
-from api.server.models.users import LoginUser, NewUser
-from api.server.database.users import checkIfUserExists, checkIfEmailExists, insertUser, getPasswordByUsername
-from api.server.auth.auth import validateUsername, validateEmail, encryptPassword, comparePasswordAndHash
+from server.models.users import LoginUser, NewUser
+from server.database.users import checkIfUserExists, checkIfEmailExists, insertUser, getPasswordByUsername
+from server.auth.auth import validateUsername, validateEmail, encryptPassword, comparePasswordAndHash
 
 class Settings(BaseModel):
-    authjwt_secret_key: str = os.getenv("SECRET_JWT_KEY")
+    authjwt_secret_key: str = "some-secret-jwt-key"
     authjwt_token_location: set = {"cookies"}
     authjwt_cookie_secure: bool = False
 
@@ -20,16 +20,9 @@ auth_router = APIRouter()
 def get_config():
     return Settings()
 
-@auth_router.exception_handler(AuthJWTException)
-def authjwt_exception_handler(request: Request, exc: AuthJWTException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.message}
-    )
-
 # auth functions
 @auth_router.post('/sign_up')
-async def sign_up(newUser: NewUser) -> str:
+async def sign_up(newUser: NewUser) -> dict:
     # 1. Validate input data:
     # 1.1 Regex username and email + validate host
     if not validateUsername(newUser.username):
@@ -47,9 +40,9 @@ async def sign_up(newUser: NewUser) -> str:
     # 4 If match, create hash
     hashedPassword = encryptPassword(newUser.password1)
     # 5 Insert user
-    id = await insertUser(newUser.username, newUser.email, hashedPassword)
+    result = await insertUser(newUser.username, newUser.email, hashedPassword)
     # 6 Send confirmation email as a background task: TODO
-    return {"id": id}
+    return {"id": result}
     
 
 @auth_router.post('/login')

@@ -11,7 +11,7 @@ def validateUsername(username: str) -> bool:
 
 def validateEmail(email: str) -> bool:
    if len(email) < 4 : return False
-   return validate_email(email, verify=True)
+   return validate_email(email)
 
 def encryptPassword(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode("utf-8")
